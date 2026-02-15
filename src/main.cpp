@@ -1,6 +1,4 @@
-#include <Geode/Geode.hpp>
-
-// --- WINDOWS NETWORKING SHIELD (MUST BE AT THE TOP) ---
+// --- WINDOWS SHIELD: MUST BE LINE 1 ---
 #ifdef GEODE_IS_WINDOWS
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
@@ -9,6 +7,7 @@
     #include <ws2tcpip.h>
 #endif
 
+#include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/LevelEditorLayer.hpp>
 #include <Geode/modify/EditorPauseLayer.hpp>
@@ -21,7 +20,7 @@ class ServerBrowser : public FLAlertLayer {
     CCMenu* m_listMenu;
 public:
     bool init() {
-        // FIX: Added '1.0f' as the 9th argument for Geode v5
+        // 9th argument (1.0f) for Geode v5
         if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching for hosts...", "Cancel", nullptr, 300.0f, false, 0, 1.0f)) 
             return false;
         
@@ -101,7 +100,7 @@ class $modify(MyPauseLayer, EditorPauseLayer) {
 };
 
 class $modify(MyEditor, LevelEditorLayer) {
-    // FIX: Using createObject to avoid 'no member' error on Mac
+    // Correct Mac hooking method
     GameObject* createObject(int id, CCPoint pos, bool undo) {
         GameObject* obj = LevelEditorLayer::createObject(id, pos, undo);
         if (obj) {
