@@ -29,13 +29,11 @@ public:
     void refreshList(float dt) {
         m_listMenu->removeAllChildren();
         auto servers = NetworkManager::get()->getFoundServers();
-
         if (servers.empty()) {
             auto label = CCLabelBMFont::create("Scanning...", "goldFont.fnt");
             label->setScale(0.6f);
             m_listMenu->addChild(label);
         }
-
         for (auto& s : servers) {
             std::string labelText = s.name + " (" + s.ip + ")";
             auto btnSprite = ButtonSprite::create(labelText.c_str(), 200, true, "goldFont.fnt", "GJ_button_01.png", 30, 0.6f);
@@ -62,7 +60,6 @@ public:
     }
 };
 
-// --- HOOK 1: MAIN MENU WIFI BUTTON ---
 class $modify(MyMenuLayer, MenuLayer) {
     bool init() {
         if (!MenuLayer::init()) return false;
@@ -77,7 +74,6 @@ class $modify(MyMenuLayer, MenuLayer) {
     void onMultiplayer(CCObject*) { ServerBrowser::create()->show(); }
 };
 
-// --- HOOK 2: EDITOR HOST BUTTON ---
 class $modify(MyPauseLayer, EditorPauseLayer) {
     void customSetup() {
         EditorPauseLayer::customSetup();
@@ -94,10 +90,9 @@ class $modify(MyPauseLayer, EditorPauseLayer) {
     }
 };
 
-// --- HOOK 3: EDITOR OBJECT SYNC ---
 class $modify(MyEditor, LevelEditorLayer) {
     void addObject(GameObject* obj) {
-        // FIX: Explicitly call the base class version to avoid redefinition errors
+        // FIX: Use 'this->LevelEditorLayer::' to properly call the original method in a hook
         this->LevelEditorLayer::addObject(obj);
         if (obj->getTag() == 99999) return;
         
