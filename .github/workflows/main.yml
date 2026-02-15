@@ -7,8 +7,8 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { name: Windows, os: windows-latest }
-        - { name: macOS, os: macos-latest }
+        - { name: Windows, os: windows-latest, target: Win64 }
+        - { name: macOS, os: macos-latest, target: Darwin }
     runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v4
@@ -16,10 +16,12 @@ jobs:
       - name: Build
         uses: geode-sdk/build-geode-mod@main
         with:
+          bindings: geode-sdk/bindings
           combine: true
+          target: ${{ matrix.config.target }}
 
-      - name: Upload
+      - name: Force Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Mod-${{ matrix.config.name }}
+          name: DeviousMod-${{ matrix.config.name }}
           path: "**/*.geode"
