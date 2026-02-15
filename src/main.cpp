@@ -20,8 +20,8 @@ class ServerBrowser : public FLAlertLayer {
     CCMenu* m_listMenu;
 public:
     bool init() {
-        // 9th argument (1.0f) for Geode v5
-        if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching for hosts...", "Cancel", nullptr, 300.0f, false, 0, 1.0f)) 
+        // 9th argument (1.0f) for Geode v5 compatibility
+        if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching...", "Cancel", nullptr, 300.0f, false, 0, 1.0f)) 
             return false;
         
         m_listMenu = CCMenu::create();
@@ -100,7 +100,7 @@ class $modify(MyPauseLayer, EditorPauseLayer) {
 };
 
 class $modify(MyEditor, LevelEditorLayer) {
-    // Correct Mac hooking method
+    // FIX: createObject is safe for Mac
     GameObject* createObject(int id, CCPoint pos, bool undo) {
         GameObject* obj = LevelEditorLayer::createObject(id, pos, undo);
         if (obj) {
