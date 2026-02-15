@@ -7,74 +7,101 @@
 using namespace geode::prelude;
 
 // --- SERVER BROWSER POPUP ---
-class ServerBrowser : public FLAlertLayer, public FLAlertLayerProtocol {
+class ServerBrowser : public FLAlertLayer {
     CCMenu* m_listMenu;
+
 public:
+    // We strictly match the init signature
     bool init() {
-        if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching...", "Cancel", nullptr)) return false;
+        // Init with standard width/height args to prevent ambiguity
+        if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching for hosts...", "Cancel", nullptr, 300.0f, false, 0)) 
+            return false;
         
         m_listMenu = CCMenu::create();
         m_listMenu->setLayout(ColumnLayout::create());
-        m_listMenu->setPosition({220, 140}); // Center-ish
+        m_listMenu->setPosition({150, 100}); // Manual center adjustment relative to layer
         m_mainLayer->addChild(m_listMenu);
 
-        // Start listening for beacons
+        // Start scanning
         NetworkManager::get()->startSearching();
         
-        // Refresh list every second
+        // Schedule update
         this->schedule(schedule_selector(ServerBrowser::refreshList), 1.0f);
         return true;
     }
 
-    void refreshList(float) {
+    void refreshList(float dt) {
         m_listMenu->removeAllChildren();
         auto servers = NetworkManager::get()->getFoundServers();
 
         if (servers.empty()) {
-            auto label = CCLabelBMFont::create("Scanning for Hosts...", "goldFont.fnt");
+            auto label = CCLabelBMFont::create("Scanning...", "goldFont.fnt");
             label->setScale(0.6f);
             m_listMenu->addChild(label);
         }
 
         for (auto& s : servers) {
+            std::string labelText = s.name + " (" + s.ip + ")";
+            
+            // EXPLICIT ButtonSprite creation to fix the error
+            // (Text, Width, Absolute, Font, Texture, Height, Scale)
+            auto btnSprite = ButtonSprite::create(
+                labelText.c_str(), 
+                200, true, "goldFont.fnt", "GJ_button_01.png", 30, 0.6f
+            );
+
             auto btn = CCMenuItemSpriteExtra::create(
-                ButtonSprite::create(fmt::format("{} ({})", s.name, s.ip).c_str(), 0, false, "goldFont.fnt", "GJ_button_01.png", 0, 0.8f),
+                btnSprite,
                 this,
                 menu_selector(ServerBrowser::onJoin)
             );
-            btn->setUserObject(CCString::create(s.ip)); // Store IP in button
+            btn->setUserObject(CCString::create(s.ip));
             m_listMenu->addChild(btn);
         }
         m_listMenu->updateLayout();
     }
 
     void onJoin(CCObject* sender) {
-        auto ip = static_cast<CCString*>(static_cast<CCNode*>(sender)->getUserObject())->getCString();
-        NetworkManager::get()->connectToServer(ip);
-        this->onBtn1(nullptr); // Close popup
+        auto node = static_cast<CCNode*>(sender);
+        // Safe cast check
+        if (auto ipStr = dynamic_cast<CCString*>(node->getUserObject())) {
+            NetworkManager::get()->connectToServer(ipStr->getCString());
+            this->onBtn1(nullptr); // Close popup
+        }
     }
 
     static ServerBrowser* create() {
         auto ret = new ServerBrowser();
-        if (ret && ret->init()) { ret->autorelease(); return ret; }
-        delete ret; return nullptr;
+        if (ret && ret->init()) { 
+            ret->autorelease(); 
+            return ret; 
+        }
+        CC_SAFE_DELETE(ret); // Safer deletion
+        return nullptr;
     }
 };
 
-// --- HOOK: MAIN MENU BUTTON ---
+// --- HOOK 1: MAIN MENU WIFI BUTTON ---
 class $modify(MyMenuLayer, MenuLayer) {
     bool init() {
         if (!MenuLayer::init()) return false;
 
         auto menu = this->getChildByID("bottom-menu");
         
-        // Add the Multiplayer Button (Using a standard sprite for now)
+        // Safe sprite creation
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_everyplayBtn_001.png");
+        if (!sprite) {
+             // Fallback if texture is missing
+             sprite = ButtonSprite::create("LAN", 40, true, "goldFont.fnt", "GJ_button_01.png", 30, 0.6f);
+        }
+
         auto btn = CCMenuItemSpriteExtra::create(
-            CCSprite::createWithSpriteFrameName("GJ_everyplayBtn_001.png"), // Looks like a wifi icon
+            sprite,
             this,
             menu_selector(MyMenuLayer::onMultiplayer)
         );
         
+        // Position it nicely if possible, or let layout handle it
         menu->addChild(btn);
         menu->updateLayout();
         return true;
@@ -85,18 +112,26 @@ class $modify(MyMenuLayer, MenuLayer) {
     }
 };
 
-// --- HOOK: HOSTING FROM EDITOR ---
+// --- HOOK 2: EDITOR HOST BUTTON ---
 class $modify(MyPauseLayer, EditorPauseLayer) {
     void customSetup() {
         EditorPauseLayer::customSetup();
         auto menu = this->getChildByID("center-menu");
-        auto btn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Host LAN"), this, menu_selector(MyPauseLayer::onHost));
+        
+        // Explicit ButtonSprite
+        auto btnSprite = ButtonSprite::create("Host LAN", 80, true, "goldFont.fnt", "GJ_button_01.png", 30, 0.6f);
+        
+        auto btn = CCMenuItemSpriteExtra::create(
+            btnSprite, 
+            this, 
+            menu_selector(MyPauseLayer::onHost)
+        );
+        
         menu->addChild(btn);
         menu->updateLayout();
     }
 
     void onHost(CCObject*) {
-        // Get Level Name
         std::string levelName = "Unknown Level";
         if (auto level = LevelEditorLayer::get()->m_level) {
             levelName = level->m_levelName;
@@ -105,16 +140,15 @@ class $modify(MyPauseLayer, EditorPauseLayer) {
     }
 };
 
-// --- HOOK: SYNCING ---
+// --- HOOK 3: EDITOR OBJECT SYNC ---
 class $modify(MyEditor, LevelEditorLayer) {
     void addObject(GameObject* obj) {
         LevelEditorLayer::addObject(obj);
         if (obj->getTag() == 99999) return;
         
-        // Protocol: 1,ID,X,Y
-        std::string packet = fmt::format("1,{},{},{}", obj->m_objectID, obj->getPositionX(), obj->getPositionY());
-        NetworkManager::get()->sendPacket(packet);
+        // Explicit string formatting
+        std::stringstream ss;
+        ss << "1," << obj->m_objectID << "," << obj->getPositionX() << "," << obj->getPositionY();
+        NetworkManager::get()->sendPacket(ss.str());
     }
-    
-    // TODO: Hook updateLevelSettings to sync colors (Packet Type 2)
 };
