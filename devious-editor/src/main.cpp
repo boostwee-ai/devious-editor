@@ -12,13 +12,13 @@ class ServerBrowser : public FLAlertLayer {
 
 public:
     bool init() {
-        // FIX: Added '1.0f' as the 9th argument to satisfy Geode v5 alpha
+        // FIX: Added '1.0f' as the 9th argument for Geode v5.0.0-alpha.1
         if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching for hosts...", "Cancel", nullptr, 300.0f, false, 0, 1.0f)) 
             return false;
         
         m_listMenu = CCMenu::create();
         m_listMenu->setLayout(ColumnLayout::create());
-        m_listMenu->setPosition({150, 100});
+        m_listMenu->setPosition({150, 100}); 
         m_mainLayer->addChild(m_listMenu);
 
         NetworkManager::get()->startSearching();
@@ -38,16 +38,8 @@ public:
 
         for (auto& s : servers) {
             std::string labelText = s.name + " (" + s.ip + ")";
-            auto btnSprite = ButtonSprite::create(
-                labelText.c_str(), 
-                200, true, "goldFont.fnt", "GJ_button_01.png", 30, 0.6f
-            );
-
-            auto btn = CCMenuItemSpriteExtra::create(
-                btnSprite,
-                this,
-                menu_selector(ServerBrowser::onJoin)
-            );
+            auto btnSprite = ButtonSprite::create(labelText.c_str(), 200, true, "goldFont.fnt", "GJ_button_01.png", 30, 0.6f);
+            auto btn = CCMenuItemSpriteExtra::create(btnSprite, this, menu_selector(ServerBrowser::onJoin));
             btn->setUserObject(CCString::create(s.ip));
             m_listMenu->addChild(btn);
         }
@@ -58,16 +50,13 @@ public:
         auto node = static_cast<CCNode*>(sender);
         if (auto ipStr = dynamic_cast<CCString*>(node->getUserObject())) {
             NetworkManager::get()->connectToServer(ipStr->getCString());
-            this->onBtn1(nullptr);
+            this->onBtn1(nullptr); 
         }
     }
 
     static ServerBrowser* create() {
         auto ret = new ServerBrowser();
-        if (ret && ret->init()) { 
-            ret->autorelease(); 
-            return ret; 
-        }
+        if (ret && ret->init()) { ret->autorelease(); return ret; }
         CC_SAFE_DELETE(ret);
         return nullptr;
     }
@@ -108,7 +97,7 @@ class $modify(MyPauseLayer, EditorPauseLayer) {
 // --- HOOK 3: EDITOR OBJECT SYNC ---
 class $modify(MyEditor, LevelEditorLayer) {
     void addObject(GameObject* obj) {
-        // FIX: Use 'this->LevelEditorLayer::' to call the original method in a hook
+        // FIX: Explicitly call the base class version to avoid redefinition errors
         this->LevelEditorLayer::addObject(obj);
         if (obj->getTag() == 99999) return;
         
