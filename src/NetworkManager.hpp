@@ -1,5 +1,6 @@
 #pragma once
 
+// --- WINDOWS HEADERS MUST BE FIRST ---
 #ifdef GEODE_IS_WINDOWS
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
