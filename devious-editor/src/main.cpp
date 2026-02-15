@@ -1,4 +1,13 @@
 #include <Geode/Geode.hpp>
+
+#ifdef GEODE_IS_WINDOWS
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#endif
+
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/LevelEditorLayer.hpp>
 #include <Geode/modify/EditorPauseLayer.hpp>
@@ -6,13 +15,15 @@
 
 using namespace geode::prelude;
 
+// --- SERVER BROWSER POPUP ---
 class ServerBrowser : public FLAlertLayer {
     CCMenu* m_listMenu;
 public:
     bool init() {
-        // FIX: Added '1.0f' as the 9th argument for Geode v5.0.0-alpha.1
+        // FIX: 9th argument (1.0f) is mandatory for Geode v5 alpha
         if (!FLAlertLayer::init(nullptr, "LAN Servers", "Searching for hosts...", "Cancel", nullptr, 300.0f, false, 0, 1.0f)) 
             return false;
+        
         m_listMenu = CCMenu::create();
         m_listMenu->setLayout(ColumnLayout::create());
         m_listMenu->setPosition({150, 100}); 
@@ -21,6 +32,7 @@ public:
         this->schedule(schedule_selector(ServerBrowser::refreshList), 1.0f);
         return true;
     }
+
     void refreshList(float dt) {
         m_listMenu->removeAllChildren();
         auto servers = NetworkManager::get()->getFoundServers();
@@ -38,6 +50,7 @@ public:
         }
         m_listMenu->updateLayout();
     }
+
     void onJoin(CCObject* sender) {
         auto node = static_cast<CCNode*>(sender);
         if (auto ipStr = dynamic_cast<CCString*>(node->getUserObject())) {
@@ -45,6 +58,7 @@ public:
             this->onBtn1(nullptr); 
         }
     }
+
     static ServerBrowser* create() {
         auto ret = new ServerBrowser();
         if (ret && ret->init()) { ret->autorelease(); return ret; }
@@ -53,6 +67,7 @@ public:
     }
 };
 
+// --- HOOK 1: MAIN MENU BUTTON ---
 class $modify(MyMenuLayer, MenuLayer) {
     bool init() {
         if (!MenuLayer::init()) return false;
@@ -67,6 +82,7 @@ class $modify(MyMenuLayer, MenuLayer) {
     void onMultiplayer(CCObject*) { ServerBrowser::create()->show(); }
 };
 
+// --- HOOK 2: EDITOR PAUSE (HOST BUTTON) ---
 class $modify(MyPauseLayer, EditorPauseLayer) {
     void customSetup() {
         EditorPauseLayer::customSetup();
@@ -83,11 +99,13 @@ class $modify(MyPauseLayer, EditorPauseLayer) {
     }
 };
 
+// --- HOOK 3: LIVE OBJECT SYNC ---
 class $modify(MyEditor, LevelEditorLayer) {
     void addObject(GameObject* obj) {
-        // FIX: Explicitly call base class method to fix scope errors
+        // FIX: Explicitly call the original method to avoid recursion
         this->LevelEditorLayer::addObject(obj);
         if (obj->getTag() == 99999) return;
+        
         std::stringstream ss;
         ss << "1," << obj->m_objectID << "," << obj->getPositionX() << "," << obj->getPositionY();
         NetworkManager::get()->sendPacket(ss.str());
