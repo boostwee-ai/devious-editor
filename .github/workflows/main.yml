@@ -1,5 +1,10 @@
-name: Devious Export
-on: [push, workflow_dispatch]
+name: Build Geode Mod
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
 
 jobs:
   build:
@@ -7,20 +12,18 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { name: Windows, os: windows-latest, target: Win64 }
-        - { name: macOS, os: macos-latest, target: Darwin }
+        - name: Windows
+          os: windows-latest
+        - name: macOS
+          os: macos-latest
+
+    name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build
+      - name: Build the Mod
         uses: geode-sdk/build-geode-mod@main
         with:
           combine: true
-          target: ${{ matrix.config.target }}
-
-      - name: Force Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: DeviousMod-${{ matrix.config.name }}
-          path: "**/*.geode"
