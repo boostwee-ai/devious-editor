@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-
 jobs:
   build:
     strategy:
@@ -14,13 +13,9 @@ jobs:
           os: windows-latest
         - name: macOS
           os: macos-latest
-
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Build Mod
         uses: geode-sdk/build-geode-mod@main
-        with:
-          bindings-update: true
