@@ -1,17 +1,19 @@
 {
 	"geode": "5.0.0-alpha.1",
 	"gd": {
-		"win": "2.2074",
-		"android": "2.2074",
-		"mac": "2.2074",
-		"ios": "2.2074"
+		"win": "2.2081",
+		"mac": "2.2081"
 	},
 	"id": "blueberryiris.devious-editor",
+	"version": "1.0.0",
 	"name": "Devious Editor",
-	"version": "v1.0.0",
-	"developer": "Blueberryiris",
-	"description": "A multiplayer collaborative editor mod.",
-	"dependencies": {
-		"geode.node-ids": ">=v1.20.0"
-	}
+	"developer": "Bishop",
+	"description": "Multiplayer live object syncing and LAN server browser.",
+	"dependencies": [
+		{
+			"id": "geode.node-ids",
+			"version": "v1.21.0",
+			"importance": "required"
+		}
+	]
 }
